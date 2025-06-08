@@ -5,12 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "run-p type-check \"build-only {@}\" --",
+    "deploy": "gh-pages -d dist",
+    "build": "run-p --skipLibCheck \"build-only {@}\" --",
     "preview": "vite preview",
     "build-only": "vite build",
-    "type-check": "vue-tsc --build",
+    "type-check": "vue-tsc --build --skipLibCheck",
     "lint": "eslint . --fix",
-    "format": "prettier --write src/"
+    "format": "prettier --write src/",
+    "buildgo": "vite build",
+    "deploygo": "gh-pages -d dist"
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
@@ -27,6 +30,7 @@
     "@vue/tsconfig": "^0.7.0",
     "eslint": "^9.22.0",
     "eslint-plugin-vue": "~10.0.0",
+    "gh-pages": "^6.3.0",
     "jiti": "^2.4.2",
     "naive-ui": "^2.41.0",
     "npm-run-all2": "^7.0.2",
