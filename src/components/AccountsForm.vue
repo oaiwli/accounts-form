@@ -7,7 +7,8 @@ interface Label {
 
 interface AccountForm {
   id: number
-  labels: Label[]
+  labelsInput: string // Временное хранилище для ввода
+  labels: Label[] // Фактическое значение
   type: string | null
   login: string
   password: string
@@ -29,7 +30,19 @@ export default defineComponent({
 
     const loadForms = () => {
       const savedForms = localStorage.getItem(STORAGE_KEY)
-      if (savedForms) forms.value = JSON.parse(savedForms)
+      if (savedForms) {
+        forms.value = JSON.parse(savedForms)
+        // Конвертируем старые данные (если labels были строкой)
+        forms.value.forEach((form) => {
+          if (typeof form.labels === 'string') {
+            form.labelsInput = form.labels
+            form.labels = parseLabels(form.labels)
+          }
+          if (!form.labelsInput) {
+            form.labelsInput = formatLabels(form.labels)
+          }
+        })
+      }
     }
 
     const saveForms = () => {
@@ -52,7 +65,8 @@ export default defineComponent({
     const addForm = () => {
       forms.value.push({
         id: Date.now(),
-        labels: parseLabels('Значение'),
+        labelsInput: 'Значение',
+        labels: [{ text: 'Значение' }],
         type: 'LDAP',
         login: 'Значение',
         password: '',
@@ -83,16 +97,13 @@ export default defineComponent({
       return isValid
     }
 
-    const handleBlur = (form: AccountForm, field: 'login' | 'password' | 'labels') => {
-      if (field === 'labels') {
-        const formIndex = forms.value.findIndex((f) => f.id === form.id)
-        if (formIndex !== -1) {
-          forms.value[formIndex].labels = parseLabels(form.labels as unknown as string)
-        }
-      } else if (field === 'login' || (field === 'password' && form.type === 'Локальная')) {
-        validateForm(form)
-      }
+    const handleLabelsBlur = (form: AccountForm) => {
+      form.labels = parseLabels(form.labelsInput)
       saveForms()
+    }
+
+    const handleBlur = (form: AccountForm, field: 'login' | 'password') => {
+      if (validateForm(form)) saveForms()
     }
 
     const handleSelectChange = (form: AccountForm) => {
@@ -101,11 +112,6 @@ export default defineComponent({
 
     onMounted(() => {
       loadForms()
-      forms.value.forEach((form) => {
-        if (typeof form.labels === 'string') {
-          form.labels = parseLabels(form.labels)
-        }
-      })
     })
 
     return {
@@ -113,6 +119,7 @@ export default defineComponent({
       options,
       addForm,
       removeForm,
+      handleLabelsBlur,
       handleBlur,
       handleSelectChange,
       validateForm,
@@ -169,9 +176,8 @@ export default defineComponent({
       <n-space vertical v-for="form in forms" :key="form.id">
         <n-space>
           <n-input
-            :value="formatLabels(form.labels)"
-            @update:value="(val) => (form.labels = val as any)"
-            @blur="handleBlur(form, 'labels')"
+            v-model:value="form.labelsInput"
+            @blur="handleLabelsBlur(form)"
             type="text"
             placeholder=""
             class="metka"
